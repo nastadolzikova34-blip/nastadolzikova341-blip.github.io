@@ -1,0 +1,439 @@
+﻿@{
+    ViewData["Title"] = "Вход в аккаунт";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Вход в аккаунт - Совместный просмотр</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #8b0000 0%, #000000 60%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: #000000;
+            border-radius: 5px;
+            box-shadow: 0 15px 35px #8b0000;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            border: none;
+        }
+
+        .logo {
+            font-size: 3rem;
+            color: #8b0000;
+            margin-bottom: 20px;
+        }
+
+        .btn-guest {
+            background: linear-gradient(135deg, #333333 0%, #000000 50%);
+            border: 2px solid #8b0000;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+            .btn-guest:hover {
+                background: #8b0000;
+                border-color: #ffffff;
+                transform: translateY(-3px);
+                box-shadow: 0 10px 20px #8b0000;
+            }
+
+        .guest-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #8b0000 0%, #333333 50%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            border: 3px solid #8b0000;
+        }
+
+            .guest-avatar i {
+                font-size: 40px;
+                color: #ffffff;
+            }
+
+        .form-control, .form-control:focus {
+            background: #1a1a1a;
+            border: 1px solid #8b0000;
+            color: white;
+            box-shadow: none;
+        }
+
+            .form-control::placeholder {
+                color: #666;
+            }
+
+        .btn-auth {
+            background: linear-gradient(135deg, #8b0000 0%, #000000 50%);
+            border: none;
+            color: white;
+            padding: 12px;
+            transition: transform 0.3s;
+        }
+
+            .btn-auth:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px #8b0000;
+                color: white;
+            }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: #666;
+            margin: 30px 0;
+        }
+
+            .divider::before,
+            .divider::after {
+                content: '';
+                flex: 1;
+                border-bottom: 1px solid #333;
+            }
+
+            .divider span {
+                padding: 0 10px;
+            }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #666;
+            padding: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+            .tab-btn.active {
+                color: #8b0000;
+            }
+
+                .tab-btn.active::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -2px;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: #8b0000;
+                }
+
+        .tab-pane {
+            display: none;
+        }
+
+            .tab-pane.active {
+                display: block;
+            }
+
+        .alert-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        }
+
+        .user-info {
+            background: linear-gradient(135deg, #8b0000 0%, #000000 50%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="text-center mb-4">
+                <div class="logo">
+                    <i class="fas fa-film"></i>
+                </div>
+                <h2 class="fw-bold text-white">Добро пожаловать!</h2>
+                <p class="text-white-50">Войдите или продолжите как гость</p>
+            </div>
+
+            <!-- Кнопка входа как гость -->
+            <button class="btn-guest mb-4" onclick="loginAsGuest()">
+                <div class="d-flex align-items-center justify-content-center">
+                    <div class="guest-avatar me-3">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="text-start">
+                        <div class="fw-bold">Продолжить как гость</div>
+                        <small class="text-white-50">Без регистрации</small>
+                    </div>
+                </div>
+            </button>
+
+            <div class="divider">
+                <span>или</span>
+            </div>
+
+            <!-- Вкладки Вход / Регистрация -->
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('login')">Вход</button>
+                <button class="tab-btn" onclick="switchTab('register')">Регистрация</button>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="loginTab" class="tab-pane active">
+                <form onsubmit="handleLogin(event)">
+                    <div class="mb-3">
+                        <label class="form-label text-white">Логин</label>
+                        <input type="text" class="form-control" id="loginUsername" placeholder="Введите логин" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-white">Пароль</label>
+                        <input type="password" class="form-control" id="loginPassword" placeholder="Введите пароль" required>
+                    </div>
+                    <button type="submit" class="btn btn-auth w-100">
+                        <i class="fas fa-sign-in-alt me-2"></i>Войти
+                    </button>
+                </form>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div id="registerTab" class="tab-pane">
+                <form onsubmit="handleRegister(event)">
+                    <div class="mb-3">
+                        <label class="form-label text-white">Логин</label>
+                        <input type="text" class="form-control" id="regUsername" placeholder="Придумайте логин" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white">Пароль</label>
+                        <input type="password" class="form-control" id="regPassword" placeholder="Придумайте пароль" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-white">Подтверждение пароля</label>
+                        <input type="password" class="form-control" id="regConfirmPassword" placeholder="Повторите пароль" required>
+                    </div>
+                    <button type="submit" class="btn btn-auth w-100">
+                        <i class="fas fa-user-plus me-2"></i>Зарегистрироваться
+                    </button>
+                </form>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="/" class="text-white-50 text-decoration-none">
+                    <i class="fas fa-arrow-left me-1"></i>Вернуться на главную
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контейнер для уведомлений -->
+    <div id="alertContainer" class="alert-message"></div>
+
+    <script>
+        // Переключение между вкладками
+        function switchTab(tab) {
+            // Обновляем кнопки
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Обновляем содержимое
+            document.getElementById('loginTab').classList.remove('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        // Показать уведомление
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            `;
+            alertContainer.appendChild(alertDiv);
+
+            // Автоматическое скрытие через 3 секунды
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        }
+
+        // Вход как гость
+        function loginAsGuest() {
+            const guestData = {
+                isGuest: true,
+                username: 'Гость_' + Math.floor(Math.random() * 10000),
+                loginTime: new Date().toISOString()
+            };
+
+            localStorage.setItem('currentUser', JSON.stringify(guestData));
+            localStorage.setItem('watchTogetherUserName', guestData.username);
+
+            showAlert('Вход выполнен как гость! Перенаправление...', 'success');
+
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        }
+
+        // Обработка входа
+        function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            // Получаем пользователей из localStorage
+            const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+
+            // Ищем пользователя
+            const user = users.find(u => u.username === username && u.password === password);
+
+            if (user) {
+                // Сохраняем текущего пользователя (без пароля)
+                const userData = {
+                    isGuest: false,
+                    username: user.username,
+                    nickname: user.nickname || user.username,
+                    avatar: user.avatar || null,
+                    bio: user.bio || '',
+                    loginTime: new Date().toISOString()
+                };
+
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                localStorage.setItem('watchTogetherUserName', user.username);
+
+                showAlert('Вход выполнен успешно! Перенаправление...', 'success');
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } else {
+                showAlert('Неверный логин или пароль', 'danger');
+            }
+        }
+
+        // Обработка регистрации
+        function handleRegister(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+            // Проверки
+            if (!username || !password) {
+                showAlert('Заполните все поля', 'warning');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('Пароли не совпадают', 'warning');
+                return;
+            }
+
+            if (password.length < 4) {
+                showAlert('Пароль должен быть не менее 4 символов', 'warning');
+                return;
+            }
+
+            // Получаем существующих пользователей
+            const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+
+            // Проверяем, не занят ли логин
+            if (users.some(u => u.username === username)) {
+                showAlert('Пользователь с таким логином уже существует', 'warning');
+                return;
+            }
+
+            // Создаем нового пользователя
+            const newUser = {
+                username: username,
+                password: password,
+                nickname: username,
+                avatar: null,
+                bio: '',
+                posts: [],
+                registrationDate: new Date().toISOString()
+            };
+
+            // Добавляем в список
+            users.push(newUser);
+            localStorage.setItem('registeredUsers', JSON.stringify(users));
+
+            // Сразу выполняем вход
+            const userData = {
+                isGuest: false,
+                username: newUser.username,
+                nickname: newUser.nickname,
+                avatar: null,
+                bio: '',
+                loginTime: new Date().toISOString()
+            };
+
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+            localStorage.setItem('watchTogetherUserName', newUser.username);
+
+            showAlert('Регистрация прошла успешно! Перенаправление...', 'success');
+
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        }
+
+        // Проверяем, не залогинен ли уже пользователь
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                // Если пользователь уже залогинен, показываем сообщение
+                const user = JSON.parse(currentUser);
+                if (user.isGuest) {
+                    showAlert(`Вы уже вошли как гость (${user.username})`, 'info');
+                } else {
+                    showAlert(`Вы уже вошли как ${user.nickname}`, 'info');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

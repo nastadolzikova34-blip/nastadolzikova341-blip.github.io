@@ -1,0 +1,878 @@
+﻿@{
+    ViewData["Title"] = "Комната";
+    var roomId = ViewData["RoomId"] as string;
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Комната @roomId - Совместный просмотр</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+
+    <style>
+       
+        body {
+            background: linear-gradient(135deg, #8b0000 0%, #000000 60%);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        }
+
+        .room-header {
+            background: linear-gradient(135deg,#000000 0%,#8b0000 50%);
+            color: #ffffff;
+            padding: 20px 0;
+            box-shadow: 0 4px 12px #000000;
+        }
+
+        .video-container {
+            background: #000000;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px #8b0000;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            position: relative;
+        }
+
+            .video-container iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: 0;
+            }
+
+        .control-btn {
+            border-radius: 5px;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #000000 0%, #8b0000 50%);
+            border: none;
+            color: white;
+        }
+
+            .control-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 5px 15px rgba(139, 0, 0, 0.5);
+            }
+
+        .users-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .status-online {
+            color: #4CAF50 !important;
+            font-weight: bold;
+        }
+
+        .status-offline {
+            color: #ff4444 !important;
+            font-weight: bold;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #000000 10%, #1a0000 90%) !important;
+            border: 1px solid #8b0000 !important;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #000000 0%, #8b0000 50%) !important;
+            border-bottom: 1px solid #ff4444 !important;
+            color: white !important;
+        }
+
+        .card-body {
+            color: #ffffff !important;
+        }
+
+        .chat-container {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            border: 2px solid #8b0000;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+
+            .message.own {
+                align-self: flex-end;
+                background: linear-gradient(135deg, #8b0000 0%, #660000 100%);
+                color: white;
+            }
+
+            .message.other {
+                align-self: flex-start;
+                background: linear-gradient(135deg, #333333 0%, #1a1a1a 100%);
+                color: #e0e0e0;
+                border: 1px solid #8b0000;
+            }
+
+        .message-system {
+            align-self: center;
+            background: rgba(139, 0, 0, 0.3);
+            color: #ffcccc;
+            font-size: 0.9em;
+            padding: 5px 12px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            margin-bottom: 4px;
+        }
+
+        .message-author {
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            .message-author:hover {
+                color: #ff4444;
+                text-decoration: underline;
+            }
+
+        .chat-input-container {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #8b0000;
+            border-radius: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .chat-send-btn {
+            background: linear-gradient(135deg, #8b0000 0%, #660000 100%);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .message-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #8b0000;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+            .message-avatar.guest {
+                background: linear-gradient(135deg, #333333 0%, #1a1a1a 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #8b0000;
+            }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            background: rgba(139, 0, 0, 0.1);
+            border-radius: 5px;
+            border: 1px solid #8b0000;
+            cursor: pointer;
+            color: white;
+        }
+
+            .user-item:hover {
+                background: rgba(139, 0, 0, 0.3);
+            }
+
+        .user-avatar-small {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #8b0000;
+            object-fit: cover;
+            background: linear-gradient(135deg, #333333 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8b0000;
+        }
+
+        .user-name {
+            color: white;
+            font-weight: bold;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .floating-reaction {
+            position: absolute;
+            font-size: 3rem;
+            animation: floatUp 3s ease-out forwards;
+        }
+
+        @@keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.5);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-150px) scale(1.2);
+            }
+        }
+
+        .reactions-panel {
+            display: flex;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            border: 1px solid #8b0000;
+            justify-content: center;
+        }
+
+        .reaction-btn {
+            background: linear-gradient(135deg, #1a0000 0%, #330000 100%);
+            border: 2px solid #8b0000;
+            border-radius: 50%;
+            width: 55px;
+            height: 55px;
+            font-size: 28px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .reaction-btn:hover {
+                transform: scale(1.15);
+                background: #8b0000;
+                border-color: #ff4444;
+                box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            }
+
+        .chat-toggle-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: #8b0000;
+            border: 2px solid #ff4444;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .chat-drawer {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            bottom: 0;
+            width: 380px;
+            background: rgba(0,0,0,0.95);
+            border-left: 2px solid #8b0000;
+            transition: right 0.3s;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .chat-drawer.open {
+                right: 0;
+            }
+
+        .dice-modal .modal-content {
+            background: #111;
+            border: 2px solid #8b0000;
+            color: white;
+        }
+
+        .dice-display {
+            font-size: 5rem;
+            text-align: center;
+            color: #ff4444;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #000000 0%, #8b0000 50%);
+            border: 1px solid #ff4444;
+            color: white;
+            font-weight: bold;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+            .action-btn:hover {
+                background: linear-gradient(135deg, #8b0000 0%, #440000 100%);
+                box-shadow: 0 0 15px rgba(139, 0, 0, 0.7);
+            }
+
+        .text-white-50, .text-muted, small {
+            color: #cccccc !important;
+        }
+
+        @@media (max-width: 768px) {
+            .room-header h1
+
+        {
+            font-size: 1.3rem !important;
+        }
+
+        .room-header .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .room-header .btn {
+            font-size: 0.8rem !important;
+            padding: 5px 10px !important;
+        }
+
+        .reactions-panel {
+            gap: 5px !important;
+            padding: 8px 10px !important;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .reaction-btn {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 20px !important;
+        }
+
+        .control-btn {
+            padding: 8px 10px !important;
+            font-size: 0.9rem !important;
+        }
+
+        .chat-drawer {
+            width: 100% !important;
+            right: -100% !important;
+        }
+
+            .chat-drawer.open {
+                right: 0 !important;
+            }
+
+        .chat-toggle-btn {
+            width: 50px !important;
+            height: 50px !important;
+            right: 10px !important;
+            bottom: 10px !important;
+            font-size: 20px !important;
+        }
+
+        .users-list {
+            max-height: 200px !important;
+        }
+
+        .card-body {
+            padding: 10px !important;
+        }
+
+        }
+
+        @@media (max-width: 480px) {
+            .reactions-panel
+
+        {
+            gap: 3px !important;
+            padding: 5px !important;
+        }
+
+        .reaction-btn {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 18px !important;
+        }
+
+        .room-header h1 {
+            font-size: 1.1rem !important;
+        }
+
+        }
+    </style>
+</head>
+<body>
+    <div class="room-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-film me-2"></i>Комната: <span id="roomIdDisplay" class="badge bg-dark text-white fs-4">@roomId</span></h1>
+                    <div class="mt-2">
+                        <div class="input-group" style="max-width: 500px;">
+                            <input type="text" class="form-control" id="roomLinkInput" value="@Context.Request.Scheme://@Context.Request.Host/room/@roomId" readonly>
+                            <button class="btn" onclick="copyRoomLink()" style="background: linear-gradient(135deg, #000000 0%, #8b0000 50%); border: none; color: white;"><i class="fas fa-copy"></i> Копировать</button>
+                            <button class="btn" onclick="shareRoomLink()" style="background: linear-gradient(135deg, #000000 0%, #8b0000 50%); border: none; color: white;"><i class="fas fa-share-alt"></i> Поделиться</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-light" onclick="generateNewRoomId()"><i class="fas fa-redo"></i> Новый ID</button>
+                        <a href="/" class="btn btn-outline-light"><i class="fas fa-home"></i> На главную</a>
+                        <a href="/Account/Profile" class="btn btn-outline-light"><i class="fas fa-user-circle"></i> Профиль</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-white"><i class="fas fa-play me-2"></i>Видеоплеер</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" id="videoUrl" class="form-control" placeholder="Вставьте ссылку VK или RuTube...">
+                            <button class="btn" onclick="loadVideo()" style="background: linear-gradient(135deg, #000000 0%, #8b0000 50%); border: none; color: white;">Загрузить</button>
+                        </div>
+
+                        <div id="videoContainer" class="video-container">
+                            <div id="videoOverlay" class="video-overlay"></div>
+                            <div class="text-center text-white p-5">Видео не загружено</div>
+                        </div>
+
+                        <div class="mt-3 d-flex justify-content-center">
+                            <div class="reactions-panel">
+                                <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+                                <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
+                                <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
+                                <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+                                <button class="reaction-btn" onclick="sendReaction('😮')">😮</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-white"><i class="fas fa-sliders-h me-2"></i>Управление</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-4"><button id="playPauseBtn" class="btn w-100 control-btn" onclick="togglePlayPause()"><i class="fas fa-play"></i> Старт</button></div>
+                            <div class="col-4"><button class="btn w-100 control-btn" onclick="syncVideo()"><i class="fas fa-sync"></i> Синхр.</button></div>
+                            <div class="col-4"><button class="btn w-100 control-btn" onclick="testConnection()"><i class="fas fa-wifi"></i> Связь</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-white"><i class="fas fa-users me-2"></i>Участники (<span id="usersCount">0</span>)</h5>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="usersList" class="users-list">
+                            <div class="text-center text-white-50">Загрузка...</div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-3">
+                            <div class="action-btn flex-fill" onclick="openDiceModal()"><i class="fas fa-dice"></i> Кубик</div>
+                            <div class="action-btn flex-fill" onclick="triggerConfetti()"><i class="fas fa-party-horn"></i> Салют</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-white"><i class="fas fa-info-circle me-2"></i>Статус</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Подключение:</strong> <span id="signalrStatus">Не активно</span></p>
+                        <p><strong>Видео:</strong> <span id="videoStatus">Не загружено</span></p>
+                        <p><strong>Ваше имя:</strong> <span id="userNameDisplay"></span></p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-white"><i class="fas fa-lightbulb me-2"></i>Подсказки</h5>
+                    </div>
+                    <div class="card-body">
+                        <small>1. VK: Поделиться → Код вставки<br>2. RuTube: ссылку напрямую<br>3. Отправляйте реакции!</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="chat-toggle-btn" onclick="toggleChat()"><i class="fas fa-comments"></i></button>
+
+    <div class="chat-drawer" id="chatDrawer">
+        <div class="chat-container" style="height: 100%; border: none;">
+            <div class="chat-header p-3" style="background: #8b0000;">
+                <span><i class="fas fa-comment"></i> Чат комнаты</span>
+                <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+            </div>
+            <div class="chat-messages-area" id="chatMessages">
+                <div class="message-system">Подключение к чату...</div>
+            </div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Сообщение...">
+                <button class="chat-send-btn" onclick="sendMessage()" id="sendMessageBtn" disabled><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade dice-modal" id="diceModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5>🎲 Кто сегодня главный?</h5>
+                    <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="dice-display" id="diceResult">🎲</div>
+                    <div id="diceWinner" class="mt-3"></div>
+                    <button class="btn btn-danger mt-3" onclick="rollDice()">Бросить кубик</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const roomId = '@roomId';
+        let connection;
+        let currentVideo;
+        let isPlaying = false;
+        let userName = '';
+        let userAvatar = null;
+        let chatOpen = false;
+
+        // Загружаем текущего пользователя
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (currentUser && Object.keys(currentUser).length > 0) {
+            userName = currentUser.nickname || currentUser.username;
+            userAvatar = currentUser.avatar || null;
+        } else {
+            userName = localStorage.getItem('watchTogetherUserName') || 'Гость_' + Math.floor(Math.random()*1000);
+            localStorage.setItem('watchTogetherUserName', userName);
+        }
+
+        document.getElementById('userNameDisplay').textContent = userName;
+
+        // Хранилище аватарок пользователей
+        const userAvatars = new Map();
+
+        async function startConnection() {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/videoHub")
+                .withAutomaticReconnect()
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            // Чат
+            connection.on("ReceiveMessage", (userId, username, message, timestamp) => {
+                console.log("Получено сообщение:", username, message);
+                const isOwn = userId === connection.connectionId;
+                const time = new Date(timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                addMessageToChat({ username, content: message, time, isOwn });
+            });
+
+            connection.on("UserJoinedWithProfile", (userId, username, avatar) => {
+                console.log("Присоединился:", username, avatar);
+                if (avatar) userAvatars.set(username, avatar);
+                addSystemMessage(`✨ ${username} присоединился`);
+                addUserToList(userId, username, avatar);
+                updateUsersCount();
+            });
+
+            connection.on("UserLeft", (userId, username) => {
+                addSystemMessage(`👋 ${username} покинул комнату`);
+                document.querySelector(`[data-user="${userId}"]`)?.remove();
+                updateUsersCount();
+            });
+
+            connection.on("UserProfileUpdated", (userId, username, avatar) => {
+                if (avatar) userAvatars.set(username, avatar);
+                updateUserInList(userId, username, avatar);
+            });
+
+            connection.on("ReceiveVideoUrl", (userId, url, type) => {
+                if(userId === connection.connectionId) return;
+                if(type === 'rutube') {
+                    const id = url.match(/video\/([a-zA-Z0-9]+)/)?.[1];
+                    document.getElementById('videoContainer').innerHTML = `<div id="videoOverlay" class="video-overlay"></div><iframe src="https://rutube.ru/play/embed/${id}" allowfullscreen></iframe>`;
+                }
+            });
+
+            connection.on("ReceiveReaction", (userId, emoji, pos) => showReaction(emoji, pos));
+            connection.on("TriggerConfetti", () => launchConfetti());
+            connection.on("ReceiveDiceRoll", (userId, result, winner) => {
+                document.getElementById('diceResult').textContent = result;
+                document.getElementById('diceWinner').innerHTML = `👑 ${escape(winner)} — главный!`;
+            });
+
+            try {
+                await connection.start();
+                console.log("SignalR подключен");
+
+                // Используем JoinRoom для совместимости
+                await connection.invoke("JoinRoom", roomId, userName);
+
+                document.getElementById('signalrStatus').innerHTML = '<span class="status-online">Активно</span>';
+                document.getElementById('sendMessageBtn').disabled = false;
+                addSystemMessage('✅ Вы подключились к чату');
+            } catch(e) {
+                console.error("Ошибка подключения:", e);
+                document.getElementById('signalrStatus').innerHTML = '<span class="status-offline">Ошибка</span>';
+            }
+        }
+
+        function addUserToList(userId, username, avatar) {
+            const list = document.getElementById('usersList');
+            if (list.querySelector('.text-center')) list.innerHTML = '';
+
+            let existing = list.querySelector(`[data-user="${userId}"]`);
+
+            if (avatar) userAvatars.set(username, avatar);
+            const displayAvatar = avatar || userAvatars.get(username);
+
+            const avatarHtml = displayAvatar
+                ? `<img src="${displayAvatar}" style="width:100%;height:100%;border-radius:50%">`
+                : '<i class="fas fa-user"></i>';
+
+            if (existing) {
+                existing.querySelector('.user-avatar-small').innerHTML = avatarHtml;
+                existing.querySelector('.user-name').textContent = username;
+            } else {
+                const div = document.createElement('div');
+                div.className = 'user-item';
+                div.setAttribute('data-user', userId);
+                div.setAttribute('data-username', username);
+                div.onclick = () => openUserProfile(username);
+                div.innerHTML = `
+                    <div class="user-avatar-small">${avatarHtml}</div>
+                    <span class="user-name">${escape(username)}</span>
+                `;
+                list.appendChild(div);
+            }
+        }
+
+        function updateUserInList(userId, username, avatar) {
+            addUserToList(userId, username, avatar);
+        }
+
+        function updateUsersCount() {
+            document.getElementById('usersCount').textContent = document.querySelectorAll('.user-item').length;
+        }
+
+        function addMessageToChat(msg) {
+            const container = document.getElementById('chatMessages');
+            // Убираем начальное сообщение если есть
+            if (container.querySelector('.message-system')?.textContent.includes('Подключение')) {
+                container.innerHTML = '';
+            }
+
+            const avatar = userAvatars.get(msg.username);
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'message-wrapper';
+            wrapper.innerHTML = `
+                <div class="message-avatar ${!avatar ? 'guest' : ''}" onclick="openUserProfile('${msg.username}')">
+                    ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;border-radius:50%">` : '<i class="fas fa-user"></i>'}
+                </div>
+                <div class="message ${msg.isOwn ? 'own' : 'other'}">
+                    <div class="message-header">
+                        <span class="message-author" onclick="openUserProfile('${msg.username}')">${escape(msg.username)}</span>
+                        <span>${msg.time}</span>
+                    </div>
+                    <div>${escape(msg.content)}</div>
+                </div>
+            `;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'message-system';
+            div.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            console.log("Отправка сообщения:", text, "connection:", connection?.state);
+
+            if(text && connection && connection.state === 'Connected') {
+                connection.invoke("SendMessage", roomId, userName, text)
+                    .then(() => {
+                        input.value = '';
+                        console.log("Сообщение отправлено");
+                    })
+                    .catch(err => {
+                        console.error("Ошибка отправки:", err);
+                        addSystemMessage('❌ Не удалось отправить сообщение');
+                    });
+            }
+        }
+
+        function sendReaction(emoji) {
+            const pos = { x: 10 + Math.random()*80, y: 10 + Math.random()*60 };
+            showReaction(emoji, pos);
+            connection?.invoke("SendReaction", roomId, emoji, pos).catch(e => console.error(e));
+        }
+
+        function showReaction(emoji, pos) {
+            const overlay = document.getElementById('videoOverlay');
+            const div = document.createElement('div');
+            div.className = 'floating-reaction';
+            div.textContent = emoji;
+            div.style.left = pos.x + '%';
+            div.style.bottom = pos.y + '%';
+            overlay.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        function triggerConfetti() {
+            connection?.invoke("TriggerLaughConfetti", roomId).catch(e => console.error(e));
+            confetti({ particleCount: 150, spread: 100 });
+            setTimeout(() => confetti({ particleCount: 100, spread: 120 }), 200);
+        }
+
+        function launchConfetti() {
+            confetti({ particleCount: 150, spread: 100 });
+            setTimeout(() => confetti({ particleCount: 100, spread: 120 }), 200);
+        }
+
+        function openDiceModal() {
+            new bootstrap.Modal(document.getElementById('diceModal')).show();
+        }
+
+        function rollDice() {
+            const users = [...document.querySelectorAll('.user-item')].map(el => el.getAttribute('data-username'));
+            if(!users.length) return;
+            connection?.invoke("RollDice", roomId, users).catch(e => console.error(e));
+        }
+
+        function openUserProfile(username) {
+            window.open(`/Account/Profile?username=${encodeURIComponent(username)}`, '_blank');
+        }
+
+        function loadVideo() {
+            const url = document.getElementById('videoUrl').value;
+            if(url.includes('rutube')) {
+                const id = url.match(/video\/([a-zA-Z0-9]+)/)?.[1];
+                document.getElementById('videoContainer').innerHTML = `<div id="videoOverlay" class="video-overlay"></div><iframe src="https://rutube.ru/play/embed/${id}" allowfullscreen></iframe>`;
+                connection?.invoke("SendVideoUrl", roomId, url, 'rutube').catch(e => console.error(e));
+                document.getElementById('videoStatus').textContent = 'Загружено';
+            }
+        }
+
+        function togglePlayPause() {
+            const btn = document.getElementById('playPauseBtn');
+            isPlaying = !isPlaying;
+            btn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i> Пауза' : '<i class="fas fa-play"></i> Старт';
+            connection?.invoke(isPlaying ? "SendPlay" : "SendPause", roomId, 0).catch(e => console.error(e));
+        }
+
+        function toggleChat() {
+            chatOpen = !chatOpen;
+            document.getElementById('chatDrawer').classList.toggle('open', chatOpen);
+        }
+
+        function copyRoomLink() {
+            navigator.clipboard?.writeText(document.getElementById('roomLinkInput').value);
+            alert('Ссылка скопирована!');
+        }
+
+        function shareRoomLink() { copyRoomLink(); }
+        function generateNewRoomId() { if(confirm('Новая комната?')) location.href = '/'; }
+        function syncVideo() { alert('Синхронизация автоматическая'); }
+        function testConnection() {
+            alert(connection?.state === 'Connected' ? '✅ Подключено' : '❌ Нет связи: ' + connection?.state);
+        }
+
+        function escape(s) {
+            if (!s) return '';
+            return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+        }
+
+        // Enter для отправки
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            startConnection();
+        });
+    </script>
+</body>
+</html>
